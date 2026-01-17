@@ -1,7 +1,8 @@
 require('dotenv').config();
-const { Client, GatewayIntentBits, REST, Routes } = require('discord.js');
+const { Client, GatewayIntentBits, EmbedBuilder, AttachmentBuilder } = require('discord.js');
 const Groq = require('groq-sdk');
 const { KNOWLEDGE_BASE } = require('./knowledge');
+const path = require('path');
 
 const client = new Client({
     intents: [
@@ -27,6 +28,7 @@ IMPORTANT RULES:
    - The Discord server (channels, roles, etc.)
 2. If a user asks about anything else (math, history, coding, real world events, etc.), strictly reply with: "I can only answer questions about LongSwordSMP, Minecraft, or our Discord."
 3. Do NOT engage in general conversation unrelated to the server.
+4. Use Discord Markdown formatting (e.g., **bold** for key terms, \`code\` for commands) to make your answers look meaningful and pretty.
 
 Server Information:
 ${JSON.stringify(KNOWLEDGE_BASE, null, 2)}
@@ -65,11 +67,28 @@ client.on('messageCreate', async message => {
                 ],
                 model: 'llama-3.1-8b-instant',
                 temperature: 0.5,
-                max_tokens: 150,
+                max_tokens: 300,
             });
 
             const answer = completion.choices[0]?.message?.content || "I couldn't generate an answer.";
-            await message.reply(answer);
+
+            // Create existing local file attachment
+            const logoPath = path.join(__dirname, 'assets', 'logo.png');
+            const logoAttachment = new AttachmentBuilder(logoPath, { name: 'logo.png' });
+
+            // Build the beautiful purple embed
+            const embed = new EmbedBuilder()
+                .setColor('#a855f7') // Premium Purple
+                .setAuthor({ name: 'LongSwordSMP Assistant', iconURL: 'attachment://logo.png' })
+                .setDescription(answer)
+                .setThumbnail('attachment://logo.png')
+                .setFooter({ text: 'LongSwordSMP • 1.20.4+ • Pure Survival', iconURL: 'attachment://logo.png' })
+                .setTimestamp();
+
+            await message.reply({
+                embeds: [embed],
+                files: [logoAttachment]
+            });
 
         } catch (error) {
             console.error('Error querying Groq:', error);
